@@ -571,23 +571,23 @@ export const homeStyles = {
 
 export const footerStyles = {
   // Main container
-  container: "mt-12 mb-4 px-4",
-  innerContainer: "max-w-6xl mx-auto",
+  container: "relative z-10 mt-12 border-t border-slate-200 bg-slate-100/80",
+  innerContainer: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6",
   
   // Content section
-  content: "backdrop-blur-md bg-white/60 border border-white/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4",
+  content: "flex items-center justify-between gap-4 text-xs text-slate-600",
   
   // Logo and copyright section
-  logoContainer: "flex items-center gap-3",
-  copyright: "text-center text-xs text-slate-500 mt-3",
+  logoContainer: "hidden",
+  copyright: "text-slate-500 whitespace-nowrap",
   
   // Navigation and social section
-  navContainer: "flex items-center gap-6",
-  nav: "hidden sm:flex items-center gap-4 text-sm text-slate-700",
-  navLink: "hover:underline",
+  navContainer: "ml-auto flex items-center gap-6 sm:gap-8",
+  nav: "hidden sm:flex items-center gap-6 text-sm text-slate-700",
+  navLink: "text-slate-700 hover:text-slate-900 transition-colors",
   
   // Social icons
-  socialContainer: "flex items-center gap-3",
-  socialLink: "p-2 rounded-md hover:bg-slate-100",
-  socialIcon: "w-4 h-4 text-slate-700"
+  socialContainer: "flex items-center gap-4",
+  socialLink: "text-slate-700 hover:text-slate-900 transition-colors",
+  socialIcon: "w-4 h-4"
 };

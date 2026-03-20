@@ -1,10 +1,11 @@
 import React from 'react'
 import { homeStyles } from '../assets/dummyStyles'
 import Header from '../components/Header'
+import Footer from '../components/Footer'
 
 const Home = () => {
     return (
-        <div className={homeStyles.root}>
+        <div className={`${homeStyles.root} flex flex-col`}>
             <div
                 className={homeStyles.blob1}
                 style={{
@@ -23,8 +24,8 @@ const Home = () => {
                 <Header onSearch={(q) => console.log("search", q)} />
             </div>
 
-
-
+            <main className="flex-1" />
+            <Footer />
         </div>
     )
 }
