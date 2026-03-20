@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { headerStyles } from '../assets/dummyStyles'
 import logo from '../assets/logo.png'
+import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/react'
 
 const Header = ({ onSearch }) => {
   const [query, setQuery] = useState('')
+  const { isSignedIn } = useUser()
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -38,6 +40,28 @@ const Header = ({ onSearch }) => {
               </button>
             </div>
           </form>
+
+          <div className={headerStyles.navContainer}>
+            <nav className="flex items-center gap-5">
+              <button className={headerStyles.navButtons}>Live</button>
+              <button className={headerStyles.navButtons}>Fixtures</button>
+              <button className={headerStyles.navButtons}>Teams</button>
+            </nav>
+
+            <div className={headerStyles.authContainer}>
+              {!isSignedIn && (
+                <>
+                  <SignInButton mode="modal">
+                    <button className={headerStyles.loginButton}>Log in</button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className={headerStyles.signupButton}>Sign up</button>
+                  </SignUpButton>
+                </>
+              )}
+              {isSignedIn && <UserButton afterSignOutUrl="/" />}
+            </div>
+          </div>
         </div>
       </div>
     </header>
