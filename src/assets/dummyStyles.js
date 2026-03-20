@@ -25,6 +25,7 @@ export const headerStyles = {
   authContainer: "flex items-center gap-2",
   loginButton: "px-3 py-1 rounded-full text-sm bg-white border border-white/40",
   signupButton: "px-4 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white text-sm shadow-md",
+  logoutButton: "px-3 py-1 rounded-full text-sm border border-slate-200 bg-white/80 text-slate-600 hover:border-slate-300",
   
   // Mobile menu
   mobileMenuButton: "md:hidden ml-auto",
