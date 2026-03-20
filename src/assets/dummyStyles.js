@@ -506,29 +506,34 @@ export const homeStyles = {
   headerContainer: "fixed inset-x-0 top-7 z-50",
   
   // Main content
-  main: "max-w-6xl mx-auto px-6 pt-20 md:pt-24",
+  main: "max-w-6xl mx-auto w-full px-4 sm:px-6 pt-28 md:pt-32 pb-8 flex-1",
   section: "mb-16",
   
   // Hero section
   heroWrapper: "relative",
-  heroBox: "relative mt-5 overflow-visible rounded-3xl px-6 md:px-10 lg:px-12 py-16 md:py-10 bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 shadow-xl",
+  heroBox: "relative mt-5 overflow-visible rounded-3xl border border-sky-200/70 px-6 md:px-10 lg:px-12 py-10 md:py-12 bg-gradient-to-r from-indigo-700 via-blue-600 to-sky-500 shadow-[0_18px_45px_rgba(30,64,175,0.28)] min-h-[360px]",
   heroSpotlight: "absolute inset-0 pointer-events-none",
-  heroSpotlightGradient: "radial-gradient(circle at 30% 40%, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 20%, transparent 40%)",
-  heroContent: "relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-center",
+  heroSpotlightGradient: "radial-gradient(circle at 18% 28%, rgba(255,255,255,0.28), rgba(255,255,255,0.03) 42%, transparent 62%)",
+  heroContent: "relative z-10 grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-4 md:gap-6 items-center h-full",
   
   // Hero text
-  heroText: "text-center md:text-left",
-  heroTitle: "text-2xl md:text-3xl lg:text-4xl font-extrabold text-white leading-tight drop-shadow-sm",
-  heroSubtitle: "mt-4 text-white/90 text-sm md:text-base max-w-2xl",
+  heroText: "text-left",
+  heroTitle: "text-4xl md:text-5xl lg:text-[3.35rem] font-extrabold text-white leading-[1.08] [text-shadow:0_2px_6px_rgba(7,20,70,0.35)] max-w-xl",
+  heroSubtitle: "mt-5 text-white/90 text-sm md:text-base max-w-xl [text-shadow:0_1px_4px_rgba(7,20,70,0.3)]",
   
   // Hero buttons
-  heroButtons: "mt-6 flex flex-wrap gap-3 justify-center md:justify-start",
-  primaryButton: "px-5 py-3 rounded-full bg-white text-indigo-700 font-medium shadow hover:scale-[1.01] transform transition",
-  secondaryButton: "px-5 py-3 rounded-full bg-white/10 border border-white/25 text-white text-sm hover:bg-white/20 transition",
+  heroButtons: "mt-7 flex flex-wrap gap-3",
+  primaryButton: "px-6 py-3 rounded-full bg-white text-indigo-700 text-sm md:text-base font-semibold shadow-[0_6px_16px_rgba(15,23,42,0.24)] hover:scale-[1.01] transform transition",
+  secondaryButton: "px-6 py-3 rounded-full bg-white/14 border border-white/30 text-white text-sm md:text-base hover:bg-white/22 transition backdrop-blur-sm",
   
   // Hero features
-  heroFeatures: "mt-6 hidden md:flex gap-4 text-sm text-white/90",
-  featureTag: "bg-white/10 px-3 py-2 rounded-lg",
+  heroFeatures: "mt-7 flex flex-wrap gap-3 text-xs md:text-sm text-white/90",
+  featureTag: "bg-white/10 border border-white/20 px-4 py-2 rounded-md backdrop-blur-sm",
+  
+  // Hero media
+  heroMedia: "relative min-h-[140px] md:min-h-[300px]",
+  heroBat: "pointer-events-none absolute right-[-150px] md:right-[-180px] lg:right-[-210px] bottom-[-148px] md:bottom-[-164px] w-[290px] sm:w-[340px] md:w-[420px] lg:w-[500px] max-w-none rotate-[20deg] drop-shadow-[0_22px_40px_rgba(15,23,42,0.45)]",
+  heroBall: "pointer-events-none absolute right-[88px] md:right-[156px] lg:right-[192px] bottom-1 md:bottom-2 w-12 sm:w-14 md:w-16 lg:w-20 drop-shadow-[0_10px_18px_rgba(15,23,42,0.35)]",
   
   // Hero shadow
   heroShadow: "absolute inset-0 rounded-3xl pointer-events-none",
