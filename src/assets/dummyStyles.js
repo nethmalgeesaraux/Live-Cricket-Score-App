@@ -4,7 +4,7 @@ export const headerStyles = {
   // Layout styles
   container: "sticky top-6 z-50 px-4",
   innerContainer: "max-w-6xl mx-auto",
-  mainWrapper: "backdrop-blur-md bg-white/60 border border-white/40 rounded-2xl p-3 flex items-center gap-4 shadow-sm",
+  mainWrapper: "relative backdrop-blur-md bg-white/60 border border-white/40 rounded-2xl p-3 flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4 shadow-sm",
   
   // Logo section
   logoContainer: "flex items-center gap-3",
@@ -14,7 +14,7 @@ export const headerStyles = {
   logoTitle: "text-slate-800 font-semibold text-2xl leading-none",
   
   // Search section
-  searchForm: "flex-1 flex items-center justify-center md:justify-start",
+  searchForm: "order-3 md:order-none basis-full md:basis-auto flex-1 flex items-center justify-center md:justify-start",
   searchWrapper: "w-full max-w-xl",
   searchInput: "w-full rounded-full border border-white/30 bg-white/40 py-2 pl-4 pr-10 text-sm placeholder:text-slate-400 focus:outline-none ring-2 ring-indigo-200",
   searchButton: "absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-indigo-600 text-white text-sm",
@@ -31,7 +31,7 @@ export const headerStyles = {
   mobileMenuButton: "md:hidden ml-auto",
   menuToggleButton: "p-2 rounded-md bg-white/60 border border-white/30",
   menuIcon: "w-5 h-5 text-slate-700",
-  mobileMenu: "mt-2 p-3 bg-white/90 rounded-lg shadow-lg absolute right-4 top-20 w-[90%] max-w-xs",
+  mobileMenu: "md:hidden mt-2 p-3 bg-white/95 border border-white/40 rounded-xl shadow-lg absolute right-3 top-[calc(100%+8px)] w-[calc(100%-24px)]",
   mobileNav: "flex flex-col gap-2",
   mobileNavButton: "text-sm text-slate-700 text-left w-full",
   mobileAuthContainer: "mt-3 flex gap-2",
@@ -571,23 +571,23 @@ export const homeStyles = {
 
 export const footerStyles = {
   // Main container
-  container: "mt-12 mb-4 px-4",
-  innerContainer: "max-w-6xl mx-auto",
+  container: "relative z-10 mt-12 border-t border-slate-200 bg-slate-100/80",
+  innerContainer: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6",
   
   // Content section
-  content: "backdrop-blur-md bg-white/60 border border-white/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4",
+  content: "flex items-center justify-between gap-4 text-xs text-slate-600",
   
   // Logo and copyright section
-  logoContainer: "flex items-center gap-3",
-  copyright: "text-center text-xs text-slate-500 mt-3",
+  logoContainer: "hidden",
+  copyright: "text-slate-500 whitespace-nowrap",
   
   // Navigation and social section
-  navContainer: "flex items-center gap-6",
-  nav: "hidden sm:flex items-center gap-4 text-sm text-slate-700",
-  navLink: "hover:underline",
+  navContainer: "ml-auto flex items-center gap-6 sm:gap-8",
+  nav: "hidden sm:flex items-center gap-6 text-sm text-slate-700",
+  navLink: "text-slate-700 hover:text-slate-900 transition-colors",
   
   // Social icons
-  socialContainer: "flex items-center gap-3",
-  socialLink: "p-2 rounded-md hover:bg-slate-100",
-  socialIcon: "w-4 h-4 text-slate-700"
+  socialContainer: "flex items-center gap-4",
+  socialLink: "text-slate-700 hover:text-slate-900 transition-colors",
+  socialIcon: "w-4 h-4"
 };
