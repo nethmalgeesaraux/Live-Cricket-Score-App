@@ -19,7 +19,7 @@ const socialLinks = [
   },
   {
     label: 'GitHub',
-    href: 'https://github.com',
+    href: 'https://github.com/nethmalgeesaraux',
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className={footerStyles.socialIcon} aria-hidden="true">
         <path

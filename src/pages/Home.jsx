@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { homeStyles } from '../assets/dummyStyles'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
@@ -6,6 +6,29 @@ import bat from '../assets/bat.png'
 import ball from '../assets/ball.png'
 
 const Home = () => {
+    const [isHomeLoading, setIsHomeLoading] = useState(false)
+    const loadingTimerRef = useRef(null)
+
+    const triggerHomeLoading = () => {
+        setIsHomeLoading(true)
+
+        if (loadingTimerRef.current) {
+            clearTimeout(loadingTimerRef.current)
+        }
+
+        loadingTimerRef.current = setTimeout(() => {
+            setIsHomeLoading(false)
+        }, 1800)
+    }
+
+    useEffect(() => {
+        return () => {
+            if (loadingTimerRef.current) {
+                clearTimeout(loadingTimerRef.current)
+            }
+        }
+    }, [])
+
     return (
         <div className={`${homeStyles.root} flex flex-col`}>
             <div
@@ -51,18 +74,44 @@ const Home = () => {
                                     </p>
 
                                     <div className={homeStyles.heroButtons}>
-                                        <button type="button" className={homeStyles.primaryButton}>
+                                        <button
+                                            type="button"
+                                            className={`${homeStyles.primaryButton} ${isHomeLoading ? homeStyles.heroButtonDisabled : ''}`}
+                                            onClick={triggerHomeLoading}
+                                        >
                                             View live matches
                                         </button>
-                                        <button type="button" className={homeStyles.secondaryButton}>
+                                        <button
+                                            type="button"
+                                            className={`${homeStyles.secondaryButton} ${isHomeLoading ? homeStyles.heroButtonDisabled : ''}`}
+                                            onClick={triggerHomeLoading}
+                                        >
                                             Quick details
                                         </button>
                                     </div>
 
                                     <div className={homeStyles.heroFeatures}>
-                                        <span className={homeStyles.featureTag}>Live scorecards</span>
-                                        <span className={homeStyles.featureTag}>Match detail</span>
-                                        <span className={homeStyles.featureTag}>Team stats</span>
+                                        <button
+                                            type="button"
+                                            className={`${homeStyles.featureButton} ${isHomeLoading ? homeStyles.heroButtonDisabled : ''}`}
+                                            onClick={triggerHomeLoading}
+                                        >
+                                            Live scorecards
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`${homeStyles.featureButton} ${isHomeLoading ? homeStyles.heroButtonDisabled : ''}`}
+                                            onClick={triggerHomeLoading}
+                                        >
+                                            Match detail
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`${homeStyles.featureButton} ${isHomeLoading ? homeStyles.heroButtonDisabled : ''}`}
+                                            onClick={triggerHomeLoading}
+                                        >
+                                            Team stats
+                                        </button>
                                     </div>
                                 </div>
 
@@ -76,6 +125,21 @@ const Home = () => {
                 </section>
             </main>
             <Footer />
+
+            {isHomeLoading && (
+                <div className={homeStyles.pageLoadingOverlay} role="status" aria-live="polite">
+                    <div className={homeStyles.pageLoadingCard}>
+                        <div className={homeStyles.pageLoadingTop}>
+                            <span className={homeStyles.pageLoadingDot} />
+                            <p className={homeStyles.pageLoadingLabel}>Loading...</p>
+                        </div>
+                        <p className={homeStyles.pageLoadingSub}>Please wait while we prepare content</p>
+                        <div className={homeStyles.pageLoadingLine}>
+                            <div className={homeStyles.pageLoadingFill} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
