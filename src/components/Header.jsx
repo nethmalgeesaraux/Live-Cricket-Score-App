@@ -5,6 +5,7 @@ import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/react'
 
 const Header = ({ onSearch }) => {
   const [query, setQuery] = useState('')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isSignedIn } = useUser()
 
   const handleSubmit = (event) => {
@@ -41,6 +42,24 @@ const Header = ({ onSearch }) => {
             </div>
           </form>
 
+          <div className={headerStyles.mobileMenuButton}>
+            <button
+              type="button"
+              className={headerStyles.menuToggleButton}
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              <svg viewBox="0 0 24 24" fill="none" className={headerStyles.menuIcon}>
+                {isMobileMenuOpen ? (
+                  <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                ) : (
+                  <path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                )}
+              </svg>
+            </button>
+          </div>
+
           <div className={headerStyles.navContainer}>
             <nav className="flex items-center gap-5">
               <button className={headerStyles.navButtons}>Live</button>
@@ -62,6 +81,43 @@ const Header = ({ onSearch }) => {
               {isSignedIn && <UserButton afterSignOutUrl="/" />}
             </div>
           </div>
+
+          {isMobileMenuOpen && (
+            <div className={headerStyles.mobileMenu}>
+              <nav className={headerStyles.mobileNav}>
+                <button className={headerStyles.mobileNavButton}>Live</button>
+                <button className={headerStyles.mobileNavButton}>Fixtures</button>
+                <button className={headerStyles.mobileNavButton}>Teams</button>
+              </nav>
+
+              {!isSignedIn && (
+                <div className={headerStyles.mobileAuthContainer}>
+                  <SignInButton mode="modal">
+                    <button
+                      className={`${headerStyles.mobileAuthButton} ${headerStyles.mobileLogin}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Log in
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button
+                      className={`${headerStyles.mobileAuthButton} ${headerStyles.mobileSignup}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign up
+                    </button>
+                  </SignUpButton>
+                </div>
+              )}
+
+              {isSignedIn && (
+                <div className="mt-3 flex justify-end">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>
