@@ -20,9 +20,10 @@ export const headerStyles = {
   searchButton: "absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-indigo-600 text-white text-sm",
   
   // Navigation section
-  navContainer: "hidden md:flex items-center gap-3",
-  navButtons: "text-sm text-slate-600 hover:text-slate-900",
-  authContainer: "flex items-center gap-2",
+  navContainer: "hidden md:flex items-center gap-3 min-w-0",
+  nav: "flex items-center gap-5 min-w-0",
+  navButtons: "text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap truncate max-w-28",
+  authContainer: "flex items-center gap-2 shrink-0",
   loginButton: "px-3 py-1 rounded-full text-sm bg-white border border-white/40",
   signupButton: "px-4 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white text-sm shadow-md",
   logoutButton: "px-3 py-1 rounded-full text-sm border border-slate-200 bg-white/80 text-slate-600 hover:border-slate-300",
@@ -525,10 +526,30 @@ export const homeStyles = {
   heroButtons: "mt-7 flex flex-wrap gap-3",
   primaryButton: "px-6 py-3 rounded-full bg-white text-indigo-700 text-sm md:text-base font-semibold shadow-[0_6px_16px_rgba(15,23,42,0.24)] hover:scale-[1.01] transform transition",
   secondaryButton: "px-6 py-3 rounded-full bg-white/14 border border-white/30 text-white text-sm md:text-base hover:bg-white/22 transition backdrop-blur-sm",
+  heroButtonDisabled: "opacity-80 cursor-wait",
   
   // Hero features
   heroFeatures: "mt-7 flex flex-wrap gap-3 text-xs md:text-sm text-white/90",
   featureTag: "bg-white/10 border border-white/20 px-4 py-2 rounded-md backdrop-blur-sm",
+  featureButton: "bg-white/10 border border-white/20 px-4 py-2 rounded-md backdrop-blur-sm hover:bg-white/20 transition",
+  
+  // Hero loading state
+  heroLoadingContainer: "mt-4 rounded-xl border border-white/30 bg-white/14 backdrop-blur-sm px-4 py-3",
+  heroLoadingRow: "flex items-center justify-between gap-3",
+  heroLoadingLeft: "flex items-center gap-2",
+  heroLoadingSpinner: "h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin",
+  heroLoadingText: "text-xs sm:text-sm text-white font-medium",
+  heroLoadingHint: "text-[11px] sm:text-xs text-white/80",
+  heroLoadingTrack: "mt-2 h-1.5 w-full rounded-full bg-white/25 overflow-hidden",
+  heroLoadingBar: "h-full w-2/5 rounded-full bg-white/90 animate-pulse",
+  pageLoadingOverlay: "fixed inset-0 z-[70] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center px-4",
+  pageLoadingCard: "w-full max-w-sm rounded-2xl border border-white/40 bg-white/85 p-5 shadow-xl",
+  pageLoadingTop: "flex items-center gap-3",
+  pageLoadingDot: "h-4 w-4 rounded-full border-2 border-indigo-300 border-t-indigo-700 animate-spin",
+  pageLoadingLabel: "text-sm font-semibold text-slate-700",
+  pageLoadingSub: "mt-1 text-xs text-slate-500",
+  pageLoadingLine: "mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-200",
+  pageLoadingFill: "h-full w-2/5 rounded-full bg-indigo-600 animate-pulse",
   
   // Hero media
   heroMedia: "relative min-h-[140px] md:min-h-[300px]",
