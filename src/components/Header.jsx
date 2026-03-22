@@ -61,7 +61,7 @@ const Header = ({ onSearch }) => {
           </div>
 
           <div className={headerStyles.navContainer}>
-            <nav className="flex items-center gap-5">
+            <nav className={headerStyles.nav}>
               <button className={headerStyles.navButtons}>Live</button>
               <button className={headerStyles.navButtons}>Fixtures</button>
               <button className={headerStyles.navButtons}>Teams</button>

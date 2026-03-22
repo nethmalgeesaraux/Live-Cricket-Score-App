@@ -20,9 +20,10 @@ export const headerStyles = {
   searchButton: "absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-indigo-600 text-white text-sm",
   
   // Navigation section
-  navContainer: "hidden md:flex items-center gap-3",
-  navButtons: "text-sm text-slate-600 hover:text-slate-900",
-  authContainer: "flex items-center gap-2",
+  navContainer: "hidden md:flex items-center gap-3 min-w-0",
+  nav: "flex items-center gap-5 min-w-0",
+  navButtons: "text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap truncate max-w-28",
+  authContainer: "flex items-center gap-2 shrink-0",
   loginButton: "px-3 py-1 rounded-full text-sm bg-white border border-white/40",
   signupButton: "px-4 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-blue-500 text-white text-sm shadow-md",
   logoutButton: "px-3 py-1 rounded-full text-sm border border-slate-200 bg-white/80 text-slate-600 hover:border-slate-300",
