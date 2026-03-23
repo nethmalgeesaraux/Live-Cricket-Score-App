@@ -237,8 +237,8 @@ const LiveMach = ({ searchQuery = '' }) => {
   ]
 
   return (
-    <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-10">
-      <div className="rounded-3xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-[0_18px_35px_rgba(15,23,42,0.09)]">
+    <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-10 anim-section-enter">
+      <div className="rounded-3xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-[0_18px_35px_rgba(15,23,42,0.09)] anim-card-lift">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/80 pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -304,7 +304,7 @@ const LiveMach = ({ searchQuery = '' }) => {
 
         <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
           {teamCards.map((team) => (
-            <article key={team.short} className="rounded-2xl border border-slate-200 bg-white p-4">
+            <article key={team.short} className="rounded-2xl border border-slate-200 bg-white p-4 anim-card-lift">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500">
@@ -351,14 +351,14 @@ const LiveMach = ({ searchQuery = '' }) => {
 
         <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
           {detailStats.map((item) => (
-            <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
+            <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3 anim-card-lift">
               <p className="text-xs text-slate-500">{item.label}</p>
               <p className="text-lg font-semibold text-slate-900 mt-1">{item.value}</p>
             </div>
           ))}
         </div>
 
-        <article className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+        <article className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 anim-card-lift">
           <h3 className="text-sm font-semibold text-slate-800">Match Details</h3>
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div className="rounded-xl bg-slate-50 p-3">
