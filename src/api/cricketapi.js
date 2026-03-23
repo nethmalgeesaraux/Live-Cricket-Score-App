@@ -48,6 +48,29 @@ const rankingsApi = axios.create({
   timeout: 20000,
 })
 
+const normalizeApiErrorMessage = (error) => {
+  const status = Number(error?.response?.status ?? 0)
+  const rawMessage =
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
+    error?.message ??
+    'Failed to fetch cricket API data'
+
+  const message = String(rawMessage).toLowerCase()
+  const isQuotaError =
+    status === 429 ||
+    message.includes('exceeded the daily quota') ||
+    message.includes('exceeded the monthly quota') ||
+    message.includes('daily quota') ||
+    message.includes('monthly quota')
+
+  if (isQuotaError) {
+    return 'Data not found'
+  }
+
+  return rawMessage
+}
+
 const getData = async (url) => {
   try {
     const response = await cricketApi.get(url, {
@@ -58,11 +81,7 @@ const getData = async (url) => {
     if (response.status === 204) return null
     return response.data
   } catch (error) {
-    const message =
-      error?.response?.data?.message ??
-      error?.response?.data?.error ??
-      error?.message ??
-      'Failed to fetch cricket API data'
+    const message = normalizeApiErrorMessage(error)
     throw new Error(message)
   }
 }
@@ -77,11 +96,7 @@ const getRankingsData = async (url, params = {}) => {
 
     return response.data
   } catch (error) {
-    const message =
-      error?.response?.data?.message ??
-      error?.response?.data?.error ??
-      error?.message ??
-      'Failed to fetch rankings API data'
+    const message = normalizeApiErrorMessage(error)
     throw new Error(message)
   }
 }
@@ -283,10 +298,11 @@ const normalizeHistoryMatch = (row) => {
   }
 }
 
-const getWeekBounds = (referenceDate = new Date()) => {
+const getWeekBounds = (referenceDate = new Date(), weekOffset = 0) => {
   const start = new Date(referenceDate)
   const dayOfWeek = (start.getDay() + 6) % 7
   start.setDate(start.getDate() - dayOfWeek)
+  start.setDate(start.getDate() + weekOffset * 7)
   start.setHours(0, 0, 0, 0)
 
   const end = new Date(start)
@@ -335,7 +351,7 @@ export const fetchLiveMatchBundle = async (preferredMatchId) => {
   return buildBundleFromMatchRow(selected)
 }
 
-export const fetchThisWeekMatches = async () => {
+const fetchMatchesByWeekOffset = async (weekOffset = 0) => {
   const [livePayload, recentPayload, upcomingPayload] = await Promise.all([
     getData('/matches/v1/live'),
     getData('/matches/v1/recent'),
@@ -363,7 +379,7 @@ export const fetchThisWeekMatches = async () => {
     }
   })
 
-  const { start, end } = getWeekBounds()
+  const { start, end } = getWeekBounds(new Date(), weekOffset)
   const weekStartMs = start.getTime()
   const weekEndMs = end.getTime()
 
@@ -378,6 +394,10 @@ export const fetchThisWeekMatches = async () => {
     matches,
   }
 }
+
+export const fetchThisWeekMatches = async () => fetchMatchesByWeekOffset(0)
+
+export const fetchLastWeekMatches = async () => fetchMatchesByWeekOffset(-1)
 
 const pickRankingsArray = (payload) => {
   if (Array.isArray(payload)) return payload
@@ -416,10 +436,86 @@ const normalizeRankRow = (item, index) => ({
   matches: Number(item?.matches ?? item?.match ?? item?.played ?? item?.playedMatches ?? 0),
 })
 
-export const fetchWomenT20TeamRankings = async () => {
+const requestRankingsFromEndpoints = async (endpoints, params = {}) => {
+  let lastError = null
+
+  for (const endpoint of endpoints) {
+    try {
+      return await getRankingsData(endpoint, params)
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError ?? new Error('Rankings endpoint unavailable')
+}
+
+const normalizePlayerRankRow = (item, index) => ({
+  rank: Number(item?.rank ?? item?.position ?? item?.pos ?? item?.ranking ?? index + 1),
+  player:
+    item?.playerName ??
+    item?.name ??
+    item?.player ??
+    item?.fullName ??
+    item?.batsman ??
+    item?.bowler ??
+    `Player ${index + 1}`,
+  country:
+    item?.country ??
+    item?.teamName ??
+    item?.team ??
+    item?.nation ??
+    item?.team_name ??
+    item?.countryName ??
+    'Unknown',
+  rating: Number(item?.rating ?? item?.points ?? item?.point ?? item?.score ?? 0),
+})
+
+const flattenCommentaryPayload = (payload) => {
+  if (!payload) return []
+
+  if (Array.isArray(payload)) return payload
+
+  const directCandidates = [
+    payload?.commentaryList,
+    payload?.commentary,
+    payload?.data,
+    payload?.response,
+    payload?.items,
+    payload?.comments,
+  ]
+
+  for (const candidate of directCandidates) {
+    if (Array.isArray(candidate)) return candidate
+  }
+
+  if (payload && typeof payload === 'object') {
+    const firstArray = Object.values(payload).find((value) => Array.isArray(value))
+    if (firstArray) return firstArray
+  }
+
+  return []
+}
+
+const normalizeCommentaryRow = (item, index) => ({
+  id: Number(item?.id ?? item?.commentaryId ?? item?.eventId ?? index + 1),
+  over: item?.overNumber ?? item?.over ?? item?.overs ?? '',
+  text:
+    item?.commText ??
+    item?.commentary ??
+    item?.text ??
+    item?.description ??
+    item?.event ??
+    'Live update',
+  timestampMs:
+    Number(item?.timestamp ?? item?.timestampMs ?? item?.ballTime ?? item?.createdTime ?? Date.now()) ||
+    Date.now(),
+})
+
+export const fetchTeamRankings = async ({ formatType = 't20', women = '1' } = {}) => {
   const payload = await getRankingsData('/rankings/team/', {
-    formatType: 't20',
-    women: '1',
+    formatType,
+    women,
   })
 
   const rankings = pickRankingsArray(payload)
@@ -427,4 +523,65 @@ export const fetchWomenT20TeamRankings = async () => {
     .sort((a, b) => a.rank - b.rank)
 
   return rankings
+}
+
+export const fetchWomenT20TeamRankings = async () =>
+  fetchTeamRankings({
+    formatType: 't20',
+    women: '1',
+  })
+
+export const fetchPlayerRankings = async ({
+  formatType = 't20',
+  women = '0',
+  roleType = 'batsman',
+} = {}) => {
+  const payload = await requestRankingsFromEndpoints(
+    ['/rankings/player/', '/rankings/players/', '/rankings/player'],
+    {
+      formatType,
+      women,
+      roleType,
+      type: roleType,
+      category: roleType,
+    }
+  )
+
+  return pickRankingsArray(payload)
+    .map(normalizePlayerRankRow)
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 20)
+}
+
+export const fetchLiveCommentary = async (matchId) => {
+  if (!matchId) return []
+
+  const endpoints = [
+    `/mcenter/v1/${matchId}/comm`,
+    `/mcenter/v1/${matchId}/commentary`,
+    `/matches/v1/${matchId}/commentary`,
+  ]
+
+  let payload = null
+  let lastError = null
+
+  for (const endpoint of endpoints) {
+    try {
+      payload = await getData(endpoint)
+      break
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  if (!payload) {
+    if (lastError) {
+      throw new Error(lastError?.message ?? 'Commentary endpoint unavailable')
+    }
+    return []
+  }
+
+  return flattenCommentaryPayload(payload)
+    .map(normalizeCommentaryRow)
+    .sort((a, b) => Number(b.timestampMs ?? 0) - Number(a.timestampMs ?? 0))
 }

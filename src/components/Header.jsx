@@ -3,14 +3,26 @@ import { headerStyles } from '../assets/dummyStyles'
 import logo from '../assets/logo.png'
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/react'
 
-const Header = ({ onSearch }) => {
+const NAV_ITEMS = [
+  { key: 'live', label: 'Live' },
+  { key: 'fixtures', label: 'Fixtures' },
+  { key: 'teams', label: 'Teams' },
+]
+
+const Header = ({ onSearch, onNavigate, activeSection = 'live' }) => {
   const [query, setQuery] = useState('')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isSignedIn } = useUser()
 
+  const navigateTo = (sectionKey) => {
+    onNavigate?.(sectionKey)
+    setIsMobileMenuOpen(false)
+  }
+
   const handleSubmit = (event) => {
     event.preventDefault()
     onSearch?.(query.trim())
+    setIsMobileMenuOpen(false)
   }
 
   return (
@@ -62,9 +74,22 @@ const Header = ({ onSearch }) => {
 
           <div className={headerStyles.navContainer}>
             <nav className={headerStyles.nav}>
-              <button className={headerStyles.navButtons}>Live</button>
-              <button className={headerStyles.navButtons}>Fixtures</button>
-              <button className={headerStyles.navButtons}>Teams</button>
+              {NAV_ITEMS.map((item) => {
+                const isActive = activeSection === item.key
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${headerStyles.navButtons} ${
+                      isActive ? 'text-indigo-700 font-semibold' : ''
+                    }`}
+                    onClick={() => navigateTo(item.key)}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    {item.label}
+                  </button>
+                )
+              })}
             </nav>
 
             <div className={headerStyles.authContainer}>
@@ -85,9 +110,22 @@ const Header = ({ onSearch }) => {
           {isMobileMenuOpen && (
             <div className={headerStyles.mobileMenu}>
               <nav className={headerStyles.mobileNav}>
-                <button className={headerStyles.mobileNavButton}>Live</button>
-                <button className={headerStyles.mobileNavButton}>Fixtures</button>
-                <button className={headerStyles.mobileNavButton}>Teams</button>
+                {NAV_ITEMS.map((item) => {
+                  const isActive = activeSection === item.key
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={`${headerStyles.mobileNavButton} ${
+                        isActive ? 'font-semibold text-indigo-700' : ''
+                      }`}
+                      onClick={() => navigateTo(item.key)}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {item.label}
+                    </button>
+                  )
+                })}
               </nav>
 
               {!isSignedIn && (
