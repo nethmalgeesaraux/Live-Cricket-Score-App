@@ -5,6 +5,8 @@ import Footer from '../components/Footer'
 import bat from '../assets/bat.png'
 import ball from '../assets/ball.png'
 import LiveMach from '../components/LiveMach'
+import MachHistory from '../components/MachHistory'
+import TeamRankings from '../components/TeamRankings'
 
 const Home = () => {
     const [isHomeLoading, setIsHomeLoading] = useState(false)
@@ -126,6 +128,8 @@ const Home = () => {
                 </section>
             </main>
             <LiveMach />
+            <TeamRankings />
+            <MachHistory />
             <Footer />
 
             {isHomeLoading && (
