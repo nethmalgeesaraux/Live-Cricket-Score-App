@@ -1,4 +1,5 @@
 import React from 'react'
+import TeamFlag from './TeamFlag'
 
 const TopRankedTeams = ({ rows }) => {
   const topRows = rows.slice(0, 3)
@@ -19,7 +20,10 @@ const TopRankedTeams = ({ rows }) => {
           }`}
         >
           <p className="text-xs text-slate-500">#{team.rank}</p>
-          <p className="text-sm font-semibold text-slate-900 mt-1">{team.team}</p>
+          <p className="text-sm font-semibold text-slate-900 mt-1 flex items-center gap-1.5">
+            <TeamFlag name={team.team} size={16} />
+            <span>{team.team}</span>
+          </p>
           <p className="text-xs text-slate-600 mt-1">Rating: {team.rating || '-'}</p>
           <p className="text-xs text-slate-500">Matches: {team.matches || '-'}</p>
         </article>

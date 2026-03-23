@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { fetchTeamRankings } from '../api/cricketapi'
+import { getDemoTeamRankings } from '../assets/demoData'
 import RankingFilters from './RankingFilters'
+import TeamFlag from './TeamFlag'
 import TopRankedTeams from './TopRankedTeams'
 import TeamRankingsCharts from './TeamRankingsCharts'
 
@@ -11,6 +13,8 @@ const TeamRankings = ({ searchQuery = '' }) => {
   const [formatType, setFormatType] = useState('t20')
   const [women, setWomen] = useState('1')
   const [lastUpdated, setLastUpdated] = useState('Waiting for first update')
+  const [fallbackNote, setFallbackNote] = useState('')
+  const [usingDemoData, setUsingDemoData] = useState(false)
 
   const loadRankings = async (selectedFormat, selectedWomen) => {
     try {
@@ -18,11 +22,38 @@ const TeamRankings = ({ searchQuery = '' }) => {
         formatType: selectedFormat,
         women: selectedWomen,
       })
-      setRows((response ?? []).slice(0, 10))
+      const liveRows = (response ?? []).slice(0, 10)
+
+      if (liveRows.length > 0) {
+        setRows(liveRows)
+        setFallbackNote('')
+        setUsingDemoData(false)
+      } else {
+        setRows(
+          getDemoTeamRankings({
+            formatType: selectedFormat,
+            women: selectedWomen,
+          })
+        )
+        setFallbackNote('Live API returned empty rankings. Showing demo data.')
+        setUsingDemoData(true)
+      }
+
       setError('')
       setLastUpdated(new Date().toLocaleTimeString())
     } catch (fetchError) {
-      setError(fetchError?.message ?? 'Failed to fetch rankings')
+      setRows(
+        getDemoTeamRankings({
+          formatType: selectedFormat,
+          women: selectedWomen,
+        })
+      )
+      setError('')
+      setFallbackNote(
+        `${fetchError?.message ?? 'Failed to fetch rankings'}. Showing demo data.`
+      )
+      setUsingDemoData(true)
+      setLastUpdated(new Date().toLocaleTimeString())
     } finally {
       setIsLoading(false)
     }
@@ -78,6 +109,9 @@ const TeamRankings = ({ searchQuery = '' }) => {
                 ? `${filteredRows.length}/${rows.length} teams match search`
                 : `${rows.length} teams loaded`}
             </p>
+            <p className="text-[11px] text-violet-700 mt-1">
+              Source: {usingDemoData ? 'Demo fallback data' : 'Live API data'}
+            </p>
             <p className="text-[11px] text-slate-500 mt-1">Last update: {lastUpdated}</p>
             <button
               type="button"
@@ -92,6 +126,12 @@ const TeamRankings = ({ searchQuery = '' }) => {
         {isLoading && (
           <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
             Loading rankings...
+          </div>
+        )}
+
+        {fallbackNote && (
+          <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+            {fallbackNote}
           </div>
         )}
 
@@ -140,7 +180,12 @@ const TeamRankings = ({ searchQuery = '' }) => {
                 {filteredRows.map((row) => (
                   <tr key={`${row.team}-${row.rank}`} className="border-t border-slate-100 text-sm">
                     <td className="px-4 py-3 font-semibold text-slate-800">{row.rank}</td>
-                    <td className="px-4 py-3 text-slate-800">{row.team}</td>
+                    <td className="px-4 py-3 text-slate-800">
+                      <span className="inline-flex items-center gap-1.5">
+                        <TeamFlag name={row.team} size={16} />
+                        <span>{row.team}</span>
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-right text-slate-700">{row.rating || '-'}</td>
                     <td className="px-4 py-3 text-right text-slate-700">{row.matches || '-'}</td>
                   </tr>

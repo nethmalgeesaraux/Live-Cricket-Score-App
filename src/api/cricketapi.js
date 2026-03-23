@@ -436,6 +436,82 @@ const normalizeRankRow = (item, index) => ({
   matches: Number(item?.matches ?? item?.match ?? item?.played ?? item?.playedMatches ?? 0),
 })
 
+const requestRankingsFromEndpoints = async (endpoints, params = {}) => {
+  let lastError = null
+
+  for (const endpoint of endpoints) {
+    try {
+      return await getRankingsData(endpoint, params)
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError ?? new Error('Rankings endpoint unavailable')
+}
+
+const normalizePlayerRankRow = (item, index) => ({
+  rank: Number(item?.rank ?? item?.position ?? item?.pos ?? item?.ranking ?? index + 1),
+  player:
+    item?.playerName ??
+    item?.name ??
+    item?.player ??
+    item?.fullName ??
+    item?.batsman ??
+    item?.bowler ??
+    `Player ${index + 1}`,
+  country:
+    item?.country ??
+    item?.teamName ??
+    item?.team ??
+    item?.nation ??
+    item?.team_name ??
+    item?.countryName ??
+    'Unknown',
+  rating: Number(item?.rating ?? item?.points ?? item?.point ?? item?.score ?? 0),
+})
+
+const flattenCommentaryPayload = (payload) => {
+  if (!payload) return []
+
+  if (Array.isArray(payload)) return payload
+
+  const directCandidates = [
+    payload?.commentaryList,
+    payload?.commentary,
+    payload?.data,
+    payload?.response,
+    payload?.items,
+    payload?.comments,
+  ]
+
+  for (const candidate of directCandidates) {
+    if (Array.isArray(candidate)) return candidate
+  }
+
+  if (payload && typeof payload === 'object') {
+    const firstArray = Object.values(payload).find((value) => Array.isArray(value))
+    if (firstArray) return firstArray
+  }
+
+  return []
+}
+
+const normalizeCommentaryRow = (item, index) => ({
+  id: Number(item?.id ?? item?.commentaryId ?? item?.eventId ?? index + 1),
+  over: item?.overNumber ?? item?.over ?? item?.overs ?? '',
+  text:
+    item?.commText ??
+    item?.commentary ??
+    item?.text ??
+    item?.description ??
+    item?.event ??
+    'Live update',
+  timestampMs:
+    Number(item?.timestamp ?? item?.timestampMs ?? item?.ballTime ?? item?.createdTime ?? Date.now()) ||
+    Date.now(),
+})
+
 export const fetchTeamRankings = async ({ formatType = 't20', women = '1' } = {}) => {
   const payload = await getRankingsData('/rankings/team/', {
     formatType,
@@ -454,3 +530,58 @@ export const fetchWomenT20TeamRankings = async () =>
     formatType: 't20',
     women: '1',
   })
+
+export const fetchPlayerRankings = async ({
+  formatType = 't20',
+  women = '0',
+  roleType = 'batsman',
+} = {}) => {
+  const payload = await requestRankingsFromEndpoints(
+    ['/rankings/player/', '/rankings/players/', '/rankings/player'],
+    {
+      formatType,
+      women,
+      roleType,
+      type: roleType,
+      category: roleType,
+    }
+  )
+
+  return pickRankingsArray(payload)
+    .map(normalizePlayerRankRow)
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 20)
+}
+
+export const fetchLiveCommentary = async (matchId) => {
+  if (!matchId) return []
+
+  const endpoints = [
+    `/mcenter/v1/${matchId}/comm`,
+    `/mcenter/v1/${matchId}/commentary`,
+    `/matches/v1/${matchId}/commentary`,
+  ]
+
+  let payload = null
+  let lastError = null
+
+  for (const endpoint of endpoints) {
+    try {
+      payload = await getData(endpoint)
+      break
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  if (!payload) {
+    if (lastError) {
+      throw new Error(lastError?.message ?? 'Commentary endpoint unavailable')
+    }
+    return []
+  }
+
+  return flattenCommentaryPayload(payload)
+    .map(normalizeCommentaryRow)
+    .sort((a, b) => Number(b.timestampMs ?? 0) - Number(a.timestampMs ?? 0))
+}

@@ -1,4 +1,5 @@
 import React from 'react'
+import TeamFlag from './TeamFlag'
 
 const TeamRankingsCharts = ({ rows }) => {
   if (!rows || rows.length === 0) return null
@@ -26,7 +27,10 @@ const TeamRankingsCharts = ({ rows }) => {
 
                 return (
                   <div key={`rating-${row.team}-${row.rank}`} className="flex items-center gap-2.5">
-                    <span className="w-20 sm:w-24 text-[11px] sm:text-xs text-slate-600 truncate">{row.team}</span>
+                    <span className="w-20 sm:w-24 text-[11px] sm:text-xs text-slate-600 truncate flex items-center gap-1">
+                      <TeamFlag name={row.team} size={14} />
+                      <span className="truncate">{row.team}</span>
+                    </span>
                     <div className="h-2.5 flex-1 rounded-full bg-slate-200 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500"
@@ -51,7 +55,10 @@ const TeamRankingsCharts = ({ rows }) => {
 
                 return (
                   <div key={`matches-${row.team}-${row.rank}`} className="flex items-center gap-2.5">
-                    <span className="w-20 sm:w-24 text-[11px] sm:text-xs text-slate-600 truncate">{row.team}</span>
+                    <span className="w-20 sm:w-24 text-[11px] sm:text-xs text-slate-600 truncate flex items-center gap-1">
+                      <TeamFlag name={row.team} size={14} />
+                      <span className="truncate">{row.team}</span>
+                    </span>
                     <div className="h-2.5 flex-1 rounded-full bg-slate-200 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500"

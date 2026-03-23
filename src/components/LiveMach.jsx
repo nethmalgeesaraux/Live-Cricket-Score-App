@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { fetchLiveMatchBundle } from '../api/cricketapi'
+import { getDemoLiveMatchBundle } from '../assets/demoData'
+import TeamFlag from './TeamFlag'
 
 const POLL_INTERVAL_MS = 15000
 
@@ -40,6 +42,28 @@ const getDisplayShort = (name, fallback) => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
+const getBadgeFlagImage = (teamName, teamShort) => {
+  const normalized = String(teamName ?? '')
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const short = String(teamShort ?? '').toLowerCase().trim()
+
+  if (normalized.includes('pakistan') || short === 'pak') return 'https://flagcdn.com/w40/pk.png'
+  if (normalized.includes('sri lanka') || short === 'sl') return 'https://flagcdn.com/w40/lk.png'
+  if (normalized.includes('india') || short === 'ind') return 'https://flagcdn.com/w40/in.png'
+  if (normalized.includes('australia') || short === 'aus') return 'https://flagcdn.com/w40/au.png'
+  if (normalized.includes('england') || short === 'eng') return 'https://flagcdn.com/w40/gb.png'
+  if (normalized.includes('new zealand') || short === 'nz') return 'https://flagcdn.com/w40/nz.png'
+  if (normalized.includes('south africa') || short === 'sa') return 'https://flagcdn.com/w40/za.png'
+  if (normalized.includes('bangladesh') || short === 'ban') return 'https://flagcdn.com/w40/bd.png'
+  if (normalized.includes('afghanistan') || short === 'afg') return 'https://flagcdn.com/w40/af.png'
+  if (normalized.includes('west indies') || short === 'wi') return 'https://flagcdn.com/w40/bb.png'
+
+  return ''
+}
+
 const formatDateTime = (timestampMs) => {
   if (!timestampMs) return '--'
   const date = new Date(timestampMs)
@@ -51,6 +75,8 @@ const LiveMach = ({ searchQuery = '' }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [lastUpdateLabel, setLastUpdateLabel] = useState('Waiting for first API update')
+  const [fallbackNote, setFallbackNote] = useState('')
+  const [usingDemoData, setUsingDemoData] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -66,14 +92,28 @@ const LiveMach = ({ searchQuery = '' }) => {
         const payload = await fetchLiveMatchBundle(preferredMatchId)
         if (!isMounted) return
 
-        setMatchBundle(payload)
+        if (payload?.matchId) {
+          setMatchBundle(payload)
+          setFallbackNote('')
+          setUsingDemoData(false)
+        } else {
+          setMatchBundle(getDemoLiveMatchBundle())
+          setFallbackNote('Live API returned empty match data. Showing demo live match.')
+          setUsingDemoData(true)
+        }
+
         setError('')
         setLastUpdateLabel(`Updated at ${new Date().toLocaleTimeString()}`)
       } catch (fetchError) {
         if (!isMounted) return
 
-        const message = fetchError?.message ?? 'Failed to fetch live cricket data'
-        setError(message)
+        setMatchBundle(getDemoLiveMatchBundle())
+        setError('')
+        setFallbackNote(
+          `${fetchError?.message ?? 'Failed to fetch live cricket data'}. Showing demo live match.`
+        )
+        setUsingDemoData(true)
+        setLastUpdateLabel(`Demo updated at ${new Date().toLocaleTimeString()}`)
       } finally {
         if (isMounted) setIsLoading(false)
         isRefreshing = false
@@ -162,6 +202,7 @@ const LiveMach = ({ searchQuery = '' }) => {
     {
       name: teamOneName,
       short: teamOneShort,
+      badgeFlagImage: getBadgeFlagImage(teamOneName, teamOneShort),
       score:
         teamOneInnings?.score !== undefined
           ? `${toNumber(teamOneInnings.score)}/${toNumber(teamOneInnings.wickets)}`
@@ -175,6 +216,7 @@ const LiveMach = ({ searchQuery = '' }) => {
     {
       name: teamTwoName,
       short: teamTwoShort,
+      badgeFlagImage: getBadgeFlagImage(teamTwoName, teamTwoShort),
       score:
         teamTwoInnings?.score !== undefined
           ? `${toNumber(teamTwoInnings.score)}/${toNumber(teamTwoInnings.wickets)}`
@@ -219,6 +261,9 @@ const LiveMach = ({ searchQuery = '' }) => {
             <p className="text-xs text-slate-600 mt-1">
               Target {target ?? '-'} | {currentRuns}/{currentWickets} ({currentOvers} ov)
             </p>
+            <p className="text-[11px] text-emerald-700 mt-1">
+              Source: {usingDemoData ? 'Demo fallback data' : 'Live API data'}
+            </p>
             <p className="text-[11px] text-slate-500 mt-1">
               Last update: {lastUpdateLabel} | Match ID: {matchBundle?.matchId ?? '-'}
             </p>
@@ -228,6 +273,12 @@ const LiveMach = ({ searchQuery = '' }) => {
         {isLoading && !matchBundle && (
           <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
             Loading live match details...
+          </div>
+        )}
+
+        {fallbackNote && (
+          <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+            {fallbackNote}
           </div>
         )}
 
@@ -256,11 +307,37 @@ const LiveMach = ({ searchQuery = '' }) => {
             <article key={team.short} className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{team.short}</p>
-                  <h3 className="text-lg font-semibold text-slate-900">{team.name}</h3>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    <span className="inline-flex items-center gap-1.5">
+                      <TeamFlag name={team.name} size={14} />
+                      <span>{team.short}</span>
+                    </span>
+                  </p>
+                  <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <TeamFlag name={team.name} size={18} />
+                    <span>{team.name}</span>
+                  </h3>
                 </div>
                 <span className="inline-flex h-8 min-w-[2.5rem] px-2 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
-                  {team.short}
+                  <span className="inline-flex items-center gap-1">
+                    {team.badgeFlagImage ? (
+                      <img
+                        src={team.badgeFlagImage}
+                        alt={`${team.name} flag`}
+                        width={16}
+                        height={12}
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        className="rounded-sm object-cover"
+                      />
+                    ) : (
+                      <span className="inline-flex h-3 w-4 items-center justify-center rounded-sm bg-slate-200 text-[8px] font-semibold text-slate-500">
+                        {team.short.slice(0, 2)}
+                      </span>
+                    )}
+                    <span>{team.short}</span>
+                  </span>
                 </span>
               </div>
               <p className="text-2xl font-bold text-slate-900 mt-4">{team.score}</p>
@@ -311,3 +388,4 @@ const LiveMach = ({ searchQuery = '' }) => {
 }
 
 export default LiveMach
+

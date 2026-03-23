@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { homeStyles } from '../assets/dummyStyles'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
@@ -7,6 +8,7 @@ import ball from '../assets/ball.png'
 import LiveMach from '../components/LiveMach'
 import MachHistory from '../components/MachHistory'
 import TeamRankings from '../components/TeamRankings'
+import CricketExtras from '../components/CricketExtras'
 
 const Home = () => {
   const [isHomeLoading, setIsHomeLoading] = useState(false)
@@ -253,6 +255,32 @@ const Home = () => {
 
       <div ref={teamsSectionRef} data-section-key="teams" className="scroll-mt-36">
         <TeamRankings searchQuery={searchQuery} />
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-4">
+          <div className="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm px-4 py-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Standalone Pages</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Link
+                to="/player-rankings"
+                className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs text-sky-700 hover:bg-sky-100"
+              >
+                Player Rankings Page
+              </Link>
+              <Link
+                to="/points-table"
+                className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100"
+              >
+                Tournament Points Table
+              </Link>
+              <Link
+                to="/live-commentary"
+                className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs text-violet-700 hover:bg-violet-100"
+              >
+                Live Commentary Panel
+              </Link>
+            </div>
+          </div>
+        </div>
+        <CricketExtras searchQuery={searchQuery} />
       </div>
 
       <Footer />
