@@ -1,227 +1,410 @@
 import React, { useEffect, useState } from 'react'
+import { fetchLiveMatchBundle } from '../api/cricketapi'
 
-const BASE_MATCH = {
-  series: 'Asia Cup 2026 - Super 4',
-  matchLabel: 'Match 08',
-  venue: 'R. Premadasa Stadium, Colombo',
-  toss: 'Sri Lanka won the toss and chose to bowl first',
-  battingTeam: 'India',
-  bowlingTeam: 'Sri Lanka',
-  target: 289,
-  firstInningsScore: '288/8',
-  firstInningsOvers: '50.0',
-  firstInningsRR: '5.76',
-  teamMeta: [
-    {
-      name: 'India',
-      short: 'IND',
-      flagUrl: 'https://flagcdn.com/w40/in.png',
-      flagAlt: 'India flag',
-    },
-    {
-      name: 'Sri Lanka',
-      short: 'SL',
-      flagUrl: 'https://flagcdn.com/w40/lk.png',
-      flagAlt: 'Sri Lanka flag',
-    },
-  ],
-}
-
-const LIVE_EVENTS = [
-  { runs: 1, wicket: false, bowler: 'Hasaranga', batter: 'KL Rahul', outcome: '1 run' },
-  { runs: 2, wicket: false, bowler: 'Hasaranga', batter: 'Axar Patel', outcome: '2 runs' },
-  { runs: 0, wicket: false, bowler: 'Hasaranga', batter: 'KL Rahul', outcome: 'Dot' },
-  { runs: 4, wicket: false, bowler: 'Madushanka', batter: 'Axar Patel', outcome: 'Four' },
-  { runs: 1, wicket: false, bowler: 'Madushanka', batter: 'Axar Patel', outcome: '1 run' },
-  { runs: 0, wicket: true, bowler: 'Madushanka', batter: 'Shardul Thakur', outcome: 'Wicket' },
-  { runs: 3, wicket: false, bowler: 'Hasaranga', batter: 'KL Rahul', outcome: '3 runs' },
-  { runs: 1, wicket: false, bowler: 'Asalanka', batter: 'Axar Patel', outcome: '1 run' },
-  { runs: 0, wicket: false, bowler: 'Asalanka', batter: 'KL Rahul', outcome: 'Dot' },
-  { runs: 4, wicket: false, bowler: 'Hasaranga', batter: 'KL Rahul', outcome: 'Four' },
-  { runs: 1, wicket: false, bowler: 'Hasaranga', batter: 'Axar Patel', outcome: '1 run' },
-  { runs: 2, wicket: false, bowler: 'Madushanka', batter: 'KL Rahul', outcome: '2 runs' },
-]
-
-const INITIAL_TIMELINE = [
-  { over: '37.6', bowler: 'Hasaranga', batter: 'Axar Patel', outcome: '1 run' },
-  { over: '37.5', bowler: 'Hasaranga', batter: 'Axar Patel', outcome: '2 runs' },
-  { over: '37.4', bowler: 'Hasaranga', batter: 'Hardik Pandya', outcome: 'Wicket' },
-  { over: '37.3', bowler: 'Hasaranga', batter: 'KL Rahul', outcome: 'Dot' },
-  { over: '37.2', bowler: 'Hasaranga', batter: 'KL Rahul', outcome: 'Four' },
-  { over: '37.1', bowler: 'Hasaranga', batter: 'KL Rahul', outcome: '1 run' },
-]
+const POLL_INTERVAL_MS = 15000
+const DEFAULT_RECENT_BALLS = ['-', '-', '-', '-', '-', '-']
 
 const ballStyleMap = {
   Dot: 'bg-slate-100 text-slate-700 border border-slate-200',
   Wicket: 'bg-rose-100 text-rose-700 border border-rose-200',
   Four: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  '1 run': 'bg-cyan-100 text-cyan-700 border border-cyan-200',
-  '2 runs': 'bg-blue-100 text-blue-700 border border-blue-200',
-  '3 runs': 'bg-indigo-100 text-indigo-700 border border-indigo-200',
+  Six: 'bg-amber-100 text-amber-700 border border-amber-200',
+  Info: 'bg-cyan-100 text-cyan-700 border border-cyan-200',
 }
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
-const formatOver = (balls) => `${Math.floor(balls / 6)}.${balls % 6}`
+const toNumber = (value) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const getFormatOverLimit = (format) => {
+  const normalized = String(format ?? '').toUpperCase()
+  if (normalized.includes('T20')) return 20
+  if (normalized.includes('ODI') || normalized.includes('ONE DAY')) return 50
+  return null
+}
+
+const oversToBalls = (overs) => {
+  if (overs === undefined || overs === null) return 0
+
+  if (typeof overs === 'number') {
+    const whole = Math.floor(overs)
+    const fraction = Math.round((overs - whole) * 10)
+    return whole * 6 + fraction
+  }
+
+  const [wholePart, ballPart = '0'] = String(overs).split('.')
+  return toNumber(wholePart) * 6 + toNumber(ballPart)
+}
+
+const formatBallsAsOver = (balls) => `${Math.floor(balls / 6)}.${balls % 6}`
 
 const calculateRunRate = (runs, balls) => {
-  if (balls === 0) return '0.00'
+  if (!balls) return '0.00'
   return (runs / (balls / 6)).toFixed(2)
 }
 
-const buildStatusText = (requiredRuns, ballsLeft, wickets) => {
-  if (requiredRuns === 0) {
-    return `India won by ${Math.max(10 - wickets, 0)} wickets`
-  }
-  if (ballsLeft === 0 || wickets >= 10) {
-    return `Sri Lanka won by ${requiredRuns} runs`
-  }
-  return `India need ${requiredRuns} runs in ${ballsLeft} balls`
+const normalizeBallToken = (token) => {
+  const value = String(token ?? '').trim().toUpperCase()
+
+  if (!value) return null
+  if (value === 'W' || value.includes('WICKET')) return 'W'
+  if (value === '4' || value.includes('FOUR')) return '4'
+  if (value === '6' || value.includes('SIX')) return '6'
+
+  if (/^[0-3]$/.test(value)) return value
+  return null
 }
 
-const buildWinChance = (requiredRuns, ballsLeft, wickets) => {
+const extractBoundaryTokens = (boundaryValue) => {
+  if (boundaryValue === null || boundaryValue === undefined) return []
+
+  if (typeof boundaryValue === 'string' || typeof boundaryValue === 'number') {
+    const direct = normalizeBallToken(boundaryValue)
+    return direct ? [direct] : []
+  }
+
+  if (typeof boundaryValue === 'object') {
+    return Object.values(boundaryValue)
+      .map(normalizeBallToken)
+      .filter(Boolean)
+  }
+
+  return []
+}
+
+const buildRecentBalls = (meta, innings) => {
+  const boundaryValues = meta?.boundarytrackervalues?.boundarytrackervalue ?? []
+  const fromBoundaries = boundaryValues.flatMap(extractBoundaryTokens)
+
+  if (fromBoundaries.length > 0) {
+    const latest = fromBoundaries.slice(-6)
+    return [...Array(6 - latest.length).fill('-'), ...latest]
+  }
+
+  const wicketCount = clamp(toNumber(innings?.wickets), 0, 6)
+  if (wicketCount > 0) {
+    return [...Array(6 - wicketCount).fill('-'), ...Array(wicketCount).fill('W')]
+  }
+
+  return DEFAULT_RECENT_BALLS
+}
+
+const extractBowlerFromDismissal = (outDescription) => {
+  if (!outDescription) return 'Unknown bowler'
+  const match = String(outDescription).match(/\bb\s+([A-Za-z .'-]+)$/i)
+  if (match?.[1]) return match[1].trim()
+  return 'Unknown bowler'
+}
+
+const buildTimeline = (innings) => {
+  const wickets = innings?.fow?.fow ?? []
+  const batterList = innings?.batsman ?? []
+
+  if (wickets.length === 0) {
+    return [
+      {
+        over: '--',
+        bowler: 'No wicket data',
+        batter: 'No dismissal updates yet',
+        outcome: 'Info',
+      },
+    ]
+  }
+
+  const dismissalByBatter = new Map(
+    batterList.map((batter) => [batter.name, batter.outdec ?? ''])
+  )
+
+  return wickets
+    .slice(-6)
+    .reverse()
+    .map((wicket) => {
+      const batterName = wicket?.batsmanname ?? 'Unknown batter'
+      const dismissal = dismissalByBatter.get(batterName)
+
+      return {
+        over:
+          typeof wicket?.overnbr === 'number' ? wicket.overnbr.toFixed(1) : String(wicket?.overnbr ?? '--'),
+        bowler: extractBowlerFromDismissal(dismissal),
+        batter: batterName,
+        outcome: 'Wicket',
+      }
+    })
+}
+
+const buildStatusText = ({ requiredRuns, ballsLeft, wickets, fallbackStatus, currentBattingTeam }) => {
+  if (requiredRuns === null || ballsLeft === null) {
+    return fallbackStatus
+  }
+
   if (requiredRuns === 0) {
-    return { india: 100, sriLanka: 0 }
+    return `${currentBattingTeam} won by ${Math.max(10 - wickets, 0)} wickets`
   }
 
   if (ballsLeft === 0 || wickets >= 10) {
-    return { india: 0, sriLanka: 100 }
+    return fallbackStatus
   }
 
-  const pressure = requiredRuns / ballsLeft
-  const indiaChanceRaw = 82 - pressure * 18 - wickets * 2 + ballsLeft / 20
-  const india = clamp(Math.round(indiaChanceRaw), 8, 92)
-
-  return {
-    india,
-    sriLanka: 100 - india,
-  }
+  return `${currentBattingTeam} need ${requiredRuns} runs in ${ballsLeft} balls`
 }
 
-const buildBallChip = (event) => {
-  if (event.wicket) return 'W'
-  if (event.runs === 0) return '0'
-  return String(event.runs)
+const pickWinnerFromStatus = (status, teamOneName, teamOneShort, teamTwoName, teamTwoShort) => {
+  const normalized = String(status ?? '').toLowerCase()
+
+  const teamOneMatch =
+    normalized.includes(String(teamOneName ?? '').toLowerCase()) ||
+    normalized.includes(String(teamOneShort ?? '').toLowerCase())
+
+  const teamTwoMatch =
+    normalized.includes(String(teamTwoName ?? '').toLowerCase()) ||
+    normalized.includes(String(teamTwoShort ?? '').toLowerCase())
+
+  if (teamOneMatch && !teamTwoMatch) return 'teamOne'
+  if (teamTwoMatch && !teamOneMatch) return 'teamTwo'
+  return null
+}
+
+const buildWinChance = ({
+  matchState,
+  status,
+  requiredRuns,
+  ballsLeft,
+  wickets,
+  battingTeamName,
+  teamOneName,
+  teamOneShort,
+  teamTwoName,
+  teamTwoShort,
+}) => {
+  if (String(matchState).toLowerCase() === 'complete') {
+    const winner = pickWinnerFromStatus(status, teamOneName, teamOneShort, teamTwoName, teamTwoShort)
+    if (winner === 'teamOne') return { teamOne: 100, teamTwo: 0 }
+    if (winner === 'teamTwo') return { teamOne: 0, teamTwo: 100 }
+  }
+
+  if (requiredRuns === null || ballsLeft === null) {
+    return { teamOne: 50, teamTwo: 50 }
+  }
+
+  if (requiredRuns === 0) {
+    const chasingIsTeamOne = battingTeamName === teamOneName
+    return chasingIsTeamOne ? { teamOne: 100, teamTwo: 0 } : { teamOne: 0, teamTwo: 100 }
+  }
+
+  if (ballsLeft === 0 || wickets >= 10) {
+    const chasingIsTeamOne = battingTeamName === teamOneName
+    return chasingIsTeamOne ? { teamOne: 0, teamTwo: 100 } : { teamOne: 100, teamTwo: 0 }
+  }
+
+  const pressure = requiredRuns / Math.max(ballsLeft, 1)
+  const battingChance = clamp(Math.round(82 - pressure * 18 - wickets * 2 + ballsLeft / 20), 8, 92)
+  const chasingIsTeamOne = battingTeamName === teamOneName
+
+  if (chasingIsTeamOne) {
+    return { teamOne: battingChance, teamTwo: 100 - battingChance }
+  }
+
+  return { teamOne: 100 - battingChance, teamTwo: battingChance }
+}
+
+const getDisplayShort = (name, fallback) => {
+  if (!name) return fallback
+  const parts = String(name).trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 3).toUpperCase()
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
 const LiveMach = () => {
-  const [liveState, setLiveState] = useState({
-    runs: 235,
-    wickets: 5,
-    ballsBowled: 228,
-    ballsLeft: 72,
-    recentBalls: ['1', '4', '0', 'W', '2', '1'],
-    timeline: INITIAL_TIMELINE,
-    players: {
-      'KL Rahul': { runs: 82, balls: 73 },
-      'Axar Patel': { runs: 26, balls: 17 },
-    },
-    tick: 0,
-    isComplete: false,
-    lastUpdateLabel: 'Simulation started',
-  })
+  const [matchBundle, setMatchBundle] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [lastUpdateLabel, setLastUpdateLabel] = useState('Waiting for first API update')
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveState((previous) => {
-        if (previous.isComplete) return previous
+    let isMounted = true
+    let isRefreshing = false
 
-        const event = LIVE_EVENTS[previous.tick % LIVE_EVENTS.length]
-        const ballsBowled = previous.ballsBowled + 1
-        const ballsLeft = Math.max(previous.ballsLeft - 1, 0)
-        const wickets = clamp(previous.wickets + (event.wicket ? 1 : 0), 0, 10)
-        const runs = previous.runs + event.runs
-        const requiredRuns = Math.max(BASE_MATCH.target - runs, 0)
+    const preferredMatchId = toNumber(import.meta.env.VITE_CRICBUZZ_MATCH_ID) || undefined
 
-        const players = { ...previous.players }
-        if (players[event.batter]) {
-          const current = players[event.batter]
-          players[event.batter] = {
-            runs: current.runs + event.runs,
-            balls: current.balls + 1,
-          }
+    const refreshLiveData = async () => {
+      if (isRefreshing) return
+      isRefreshing = true
+
+      try {
+        const payload = await fetchLiveMatchBundle(preferredMatchId)
+        if (!isMounted) return
+
+        setMatchBundle(payload)
+        setError('')
+        setLastUpdateLabel(`Updated at ${new Date().toLocaleTimeString()}`)
+      } catch (fetchError) {
+        if (!isMounted) return
+
+        const message =
+          fetchError?.response?.data?.message ??
+          fetchError?.message ??
+          'Failed to fetch live cricket data'
+
+        setError(message)
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
         }
+        isRefreshing = false
+      }
+    }
 
-        const nextOver = formatOver(ballsBowled)
-        const nextTimeline = [
-          {
-            over: nextOver,
-            bowler: event.bowler,
-            batter: event.batter,
-            outcome: event.outcome,
-          },
-          ...previous.timeline,
-        ].slice(0, 6)
+    refreshLiveData()
+    const intervalId = setInterval(refreshLiveData, POLL_INTERVAL_MS)
 
-        const nextRecentBalls = [...previous.recentBalls.slice(1), buildBallChip(event)]
-        const matchComplete = requiredRuns === 0 || ballsLeft === 0 || wickets >= 10
-
-        return {
-          ...previous,
-          runs,
-          wickets,
-          ballsBowled,
-          ballsLeft,
-          players,
-          timeline: nextTimeline,
-          recentBalls: nextRecentBalls,
-          tick: previous.tick + 1,
-          isComplete: matchComplete,
-          lastUpdateLabel: `Over ${nextOver} updated`,
-        }
-      })
-    }, 3500)
-
-    return () => clearInterval(interval)
+    return () => {
+      isMounted = false
+      clearInterval(intervalId)
+    }
   }, [])
 
-  const currentScore = `${liveState.runs}/${liveState.wickets}`
-  const currentOvers = formatOver(liveState.ballsBowled)
-  const currentRR = calculateRunRate(liveState.runs, liveState.ballsBowled)
-  const requiredRuns = Math.max(BASE_MATCH.target - liveState.runs, 0)
+  const meta = matchBundle?.meta ?? {}
+  const scorePayload = matchBundle?.scorecard ?? {}
+  const inningsList = scorePayload?.scorecard ?? []
+  const currentInnings = inningsList.length > 0 ? inningsList[inningsList.length - 1] : null
+  const previousInnings = inningsList.length > 1 ? inningsList[inningsList.length - 2] : null
+
+  const teamOneName = meta?.team1?.teamname ?? inningsList[0]?.batteamname ?? 'Team 1'
+  const teamOneShort = meta?.team1?.teamsname ?? getDisplayShort(teamOneName, 'T1')
+  const teamTwoName = meta?.team2?.teamname ?? inningsList[1]?.batteamname ?? 'Team 2'
+  const teamTwoShort = meta?.team2?.teamsname ?? getDisplayShort(teamTwoName, 'T2')
+
+  const inningsByShortName = inningsList.reduce((accumulator, innings) => {
+    if (innings?.batteamsname) {
+      accumulator[innings.batteamsname] = innings
+    }
+    return accumulator
+  }, {})
+
+  const teamOneInnings =
+    inningsByShortName[teamOneShort] ??
+    inningsList.find((innings) => innings?.batteamname === teamOneName) ??
+    null
+
+  const teamTwoInnings =
+    inningsByShortName[teamTwoShort] ??
+    inningsList.find((innings) => innings?.batteamname === teamTwoName) ??
+    null
+
+  const currentRuns = toNumber(currentInnings?.score)
+  const currentWickets = toNumber(currentInnings?.wickets)
+  const currentBallsBowled = toNumber(currentInnings?.ballnbr) || oversToBalls(currentInnings?.overs)
+  const currentOvers = currentInnings?.overs ?? formatBallsAsOver(currentBallsBowled)
+  const currentRR = currentInnings?.runrate
+    ? Number(currentInnings.runrate).toFixed(2)
+    : calculateRunRate(currentRuns, currentBallsBowled)
+
+  const hasTarget = previousInnings?.score !== undefined && previousInnings?.score !== null
+  const target = hasTarget ? toNumber(previousInnings.score) + 1 : null
+  const requiredRuns = target !== null ? Math.max(target - currentRuns, 0) : null
+
+  const formatLimit = getFormatOverLimit(meta?.matchformat)
+  const ballsLeft = formatLimit ? Math.max(formatLimit * 6 - currentBallsBowled, 0) : null
   const requiredRR =
-    liveState.ballsLeft > 0 ? ((requiredRuns * 6) / liveState.ballsLeft).toFixed(2) : '0.00'
-  const status = buildStatusText(requiredRuns, liveState.ballsLeft, liveState.wickets)
-  const winChance = buildWinChance(requiredRuns, liveState.ballsLeft, liveState.wickets)
+    requiredRuns !== null && ballsLeft !== null && ballsLeft > 0
+      ? ((requiredRuns * 6) / ballsLeft).toFixed(2)
+      : '0.00'
+
+  const defaultStatus = meta?.status ?? scorePayload?.status ?? 'Live match data loaded'
+  const status = buildStatusText({
+    requiredRuns,
+    ballsLeft,
+    wickets: currentWickets,
+    fallbackStatus: defaultStatus,
+    currentBattingTeam: currentInnings?.batteamname ?? teamOneName,
+  })
+
+  const winChance = buildWinChance({
+    matchState: meta?.state,
+    status: defaultStatus,
+    requiredRuns,
+    ballsLeft,
+    wickets: currentWickets,
+    battingTeamName: currentInnings?.batteamname,
+    teamOneName,
+    teamOneShort,
+    teamTwoName,
+    teamTwoShort,
+  })
 
   const teamCards = [
     {
-      ...BASE_MATCH.teamMeta[0],
-      score: currentScore,
-      overs: `${currentOvers} ov`,
-      runRate: `CRR ${currentRR}`,
+      name: teamOneName,
+      short: teamOneShort,
+      score:
+        teamOneInnings?.score !== undefined
+          ? `${toNumber(teamOneInnings.score)}/${toNumber(teamOneInnings.wickets)}`
+          : '--/--',
+      overs: teamOneInnings?.overs !== undefined ? `${teamOneInnings.overs} ov` : '-- ov',
+      runRate:
+        teamOneInnings?.runrate !== undefined
+          ? `RR ${Number(teamOneInnings.runrate).toFixed(2)}`
+          : 'RR --',
     },
     {
-      ...BASE_MATCH.teamMeta[1],
-      score: BASE_MATCH.firstInningsScore,
-      overs: `${BASE_MATCH.firstInningsOvers} ov`,
-      runRate: `RR ${BASE_MATCH.firstInningsRR}`,
+      name: teamTwoName,
+      short: teamTwoShort,
+      score:
+        teamTwoInnings?.score !== undefined
+          ? `${toNumber(teamTwoInnings.score)}/${toNumber(teamTwoInnings.wickets)}`
+          : '--/--',
+      overs: teamTwoInnings?.overs !== undefined ? `${teamTwoInnings.overs} ov` : '-- ov',
+      runRate:
+        teamTwoInnings?.runrate !== undefined
+          ? `RR ${Number(teamTwoInnings.runrate).toFixed(2)}`
+          : 'RR --',
     },
   ]
 
   const chaseStats = [
-    { label: 'Required Runs', value: String(requiredRuns) },
-    { label: 'Balls Left', value: String(liveState.ballsLeft) },
-    { label: 'Required RR', value: requiredRR },
+    { label: 'Required Runs', value: requiredRuns === null ? '-' : String(requiredRuns) },
+    { label: 'Balls Left', value: ballsLeft === null ? '-' : String(ballsLeft) },
+    { label: 'Required RR', value: requiredRuns === null ? '-' : requiredRR },
     { label: 'Current RR', value: currentRR },
   ]
 
+  const battingLeaders = (currentInnings?.batsman ?? [])
+    .filter((batter) => toNumber(batter?.balls) > 0)
+    .sort((a, b) => toNumber(b.runs) - toNumber(a.runs))
+    .slice(0, 2)
+    .map((batter) => ({
+      name: batter.name,
+      score: `${toNumber(batter.runs)} (${toNumber(batter.balls)})`,
+    }))
+
+  const bowlingLeaders = (currentInnings?.bowler ?? [])
+    .sort((a, b) => {
+      const wicketDelta = toNumber(b.wickets) - toNumber(a.wickets)
+      if (wicketDelta !== 0) return wicketDelta
+      return toNumber(a.runs) - toNumber(b.runs)
+    })
+    .slice(0, 2)
+    .map((bowler) => ({
+      name: bowler.name,
+      figures: `${toNumber(bowler.wickets)}/${toNumber(bowler.runs)} (${bowler.overs})`,
+    }))
+
   const keyPlayers = {
-    batting: [
-      {
-        name: 'KL Rahul',
-        score: `${liveState.players['KL Rahul'].runs} (${liveState.players['KL Rahul'].balls})`,
-      },
-      {
-        name: 'Axar Patel',
-        score: `${liveState.players['Axar Patel'].runs} (${liveState.players['Axar Patel'].balls})`,
-      },
-    ],
-    bowling: [
-      { name: 'Wanindu Hasaranga', figures: '2/42 (8)' },
-      { name: 'Dilshan Madushanka', figures: '2/54 (8.3)' },
-    ],
+    batting:
+      battingLeaders.length > 0
+        ? battingLeaders
+        : [{ name: 'No batting data', score: 'Yet to update' }],
+    bowling:
+      bowlingLeaders.length > 0
+        ? bowlingLeaders
+        : [{ name: 'No bowling data', figures: 'Yet to update' }],
   }
+
+  const recentBalls = buildRecentBalls(meta, currentInnings)
+  const timeline = buildTimeline(currentInnings)
 
   return (
     <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-10">
@@ -230,27 +413,47 @@ const LiveMach = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">Live Match Center</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">
+                Live Match Center
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{BASE_MATCH.series}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
+              {meta?.seriesname ?? 'Live Cricket Match'}
+            </h2>
             <p className="text-sm text-slate-600 mt-1">
-              {BASE_MATCH.matchLabel} | {BASE_MATCH.venue}
+              {meta?.matchdesc ?? 'Match'} | {meta?.venueinfo?.ground ?? 'Venue update pending'}
+              {meta?.venueinfo?.city ? `, ${meta.venueinfo.city}` : ''}
             </p>
-            <p className="text-sm text-slate-500 mt-2">{BASE_MATCH.toss}</p>
+            <p className="text-sm text-slate-500 mt-2">{meta?.tossstatus ?? 'Toss update pending'}</p>
           </div>
 
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 min-w-[230px]">
             <p className="text-xs text-emerald-700 font-semibold uppercase tracking-wide">Live Chase</p>
             <p className="text-sm font-semibold text-slate-800 mt-1">{status}</p>
             <p className="text-xs text-slate-600 mt-1">
-              Target {BASE_MATCH.target} | {currentScore} ({currentOvers} ov)
+              Target {target ?? '-'} | {currentRuns}/{currentWickets} ({currentOvers} ov)
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              Batting: {BASE_MATCH.battingTeam} | Bowling: {BASE_MATCH.bowlingTeam}
+              Batting: {currentInnings?.batteamname ?? '-'} | Bowling:{' '}
+              {currentInnings?.batteamname === teamOneName ? teamTwoName : teamOneName}
             </p>
-            <p className="text-[11px] text-slate-500 mt-1">Last update: {liveState.lastUpdateLabel}</p>
+            <p className="text-[11px] text-slate-500 mt-1">
+              Last update: {lastUpdateLabel} | Match ID: {matchBundle?.matchId ?? '-'}
+            </p>
           </div>
         </div>
+
+        {isLoading && !matchBundle && (
+          <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+            Loading live cricket data...
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            API error: {error}
+          </div>
+        )}
 
         <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
           {teamCards.map((team) => (
@@ -260,8 +463,8 @@ const LiveMach = () => {
                   <p className="text-xs uppercase tracking-wide text-slate-500">{team.short}</p>
                   <h3 className="text-lg font-semibold text-slate-900">{team.name}</h3>
                 </div>
-                <span className="inline-flex h-8 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50">
-                  <img src={team.flagUrl} alt={team.flagAlt} className="h-5 w-7 rounded-sm object-cover" />
+                <span className="inline-flex h-8 min-w-[2.5rem] px-2 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                  {team.short}
                 </span>
               </div>
               <p className="text-2xl font-bold text-slate-900 mt-4">{team.score}</p>
@@ -277,20 +480,20 @@ const LiveMach = () => {
             <div className="mt-3 space-y-3">
               <div>
                 <div className="flex items-center justify-between text-sm">
-                  <span>India</span>
-                  <span>{winChance.india}%</span>
+                  <span>{teamOneShort}</span>
+                  <span>{winChance.teamOne}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-slate-700 mt-1 overflow-hidden">
-                  <div className="h-full bg-cyan-400" style={{ width: `${winChance.india}%` }} />
+                  <div className="h-full bg-cyan-400" style={{ width: `${winChance.teamOne}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between text-sm">
-                  <span>Sri Lanka</span>
-                  <span>{winChance.sriLanka}%</span>
+                  <span>{teamTwoShort}</span>
+                  <span>{winChance.teamTwo}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-slate-700 mt-1 overflow-hidden">
-                  <div className="h-full bg-blue-300" style={{ width: `${winChance.sriLanka}%` }} />
+                  <div className="h-full bg-blue-300" style={{ width: `${winChance.teamTwo}%` }} />
                 </div>
               </div>
             </div>
@@ -313,7 +516,7 @@ const LiveMach = () => {
               <p className="text-xs text-slate-500">{currentOvers} over stage</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              {liveState.recentBalls.map((ball, idx) => (
+              {recentBalls.map((ball, idx) => (
                 <span
                   key={`${ball}-${idx}`}
                   className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold ${
@@ -321,9 +524,11 @@ const LiveMach = () => {
                       ? 'bg-rose-100 text-rose-700'
                       : ball === '4'
                         ? 'bg-emerald-100 text-emerald-700'
-                        : ball === '0'
-                          ? 'bg-slate-100 text-slate-700'
-                          : 'bg-cyan-100 text-cyan-700'
+                        : ball === '6'
+                          ? 'bg-amber-100 text-amber-700'
+                          : ball === '0'
+                            ? 'bg-slate-100 text-slate-700'
+                            : 'bg-cyan-100 text-cyan-700'
                   }`}
                 >
                   {ball}
@@ -358,11 +563,14 @@ const LiveMach = () => {
         <article className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Ball-by-Ball Detail</h3>
-            <p className="text-xs text-slate-500">Auto simulation every 3.5s</p>
+            <p className="text-xs text-slate-500">Auto refresh every 15s</p>
           </div>
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-            {liveState.timeline.map((event) => (
-              <div key={`${event.over}-${event.bowler}-${event.batter}`} className="rounded-xl border border-slate-200 px-3 py-2">
+            {timeline.map((event, index) => (
+              <div
+                key={`${event.over}-${event.bowler}-${event.batter}-${index}`}
+                className="rounded-xl border border-slate-200 px-3 py-2"
+              >
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-slate-500">{event.over}</p>
                   <span
