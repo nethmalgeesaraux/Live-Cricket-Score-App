@@ -89,8 +89,8 @@ const TeamRankings = ({ searchQuery = '' }) => {
   }
 
   return (
-    <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-10">
-      <div className="rounded-3xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-[0_18px_35px_rgba(15,23,42,0.09)]">
+    <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-10 anim-section-enter">
+      <div className="rounded-3xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-[0_18px_35px_rgba(15,23,42,0.09)] anim-card-lift">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/80 pb-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">ICC Rankings</p>
@@ -102,7 +102,7 @@ const TeamRankings = ({ searchQuery = '' }) => {
               </p>
             )}
           </div>
-          <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 min-w-[230px]">
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 min-w-[230px] anim-card-lift">
             <p className="text-xs text-violet-700 font-semibold uppercase tracking-wide">Rankings Snapshot</p>
             <p className="text-sm font-semibold text-slate-800 mt-1">
               {isSearchActive
@@ -166,7 +166,7 @@ const TeamRankings = ({ searchQuery = '' }) => {
         <TopRankedTeams rows={filteredRows} />
 
         {filteredRows.length > 0 && (
-          <div className="mt-5 overflow-x-auto">
+          <div className="mt-5 overflow-x-auto anim-reveal-up" style={{ '--anim-delay': '120ms' }}>
             <table className="min-w-full rounded-2xl overflow-hidden border border-slate-200 bg-white">
               <thead className="bg-slate-100 text-slate-700 text-sm">
                 <tr>
@@ -202,3 +202,4 @@ const TeamRankings = ({ searchQuery = '' }) => {
 }
 
 export default TeamRankings
+

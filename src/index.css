@@ -1,1 +1,93 @@
 @import "tailwindcss";
+
+@keyframes app-reveal-up {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes app-float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(var(--app-rot, 0deg));
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(var(--app-rot, 0deg));
+  }
+}
+
+@keyframes app-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.anim-reveal-up {
+  opacity: 0;
+  animation: app-reveal-up 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--anim-delay, 0ms);
+}
+
+.anim-section-enter {
+  opacity: 0;
+  animation: app-reveal-up 820ms cubic-bezier(0.2, 0.95, 0.3, 1) forwards;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+.anim-hero-glow {
+  background-size: 180% 180%;
+  animation: app-gradient-shift 16s ease infinite;
+}
+
+.anim-float-slow {
+  animation: app-float 5.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.anim-float-fast {
+  animation: app-float 4.1s ease-in-out infinite;
+  will-change: transform;
+}
+
+.anim-card-lift {
+  transition: transform 280ms ease, box-shadow 280ms ease, border-color 280ms ease;
+}
+
+.anim-card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-reveal-up,
+  .anim-section-enter,
+  .anim-hero-glow,
+  .anim-float-slow,
+  .anim-float-fast {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .anim-card-lift,
+  .anim-card-lift:hover {
+    transition: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}

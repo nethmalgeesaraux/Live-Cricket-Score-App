@@ -441,8 +441,8 @@ const CricketExtras = ({ searchQuery = '', initialTab = 'players', showTabSwitch
   }, [commentaryRows, commentaryEvents])
 
   return (
-    <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-12">
-      <div className="rounded-3xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-[0_18px_35px_rgba(15,23,42,0.09)]">
+    <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-12 anim-section-enter">
+      <div className="rounded-3xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-[0_18px_35px_rgba(15,23,42,0.09)] anim-card-lift">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/80 pb-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Advanced Center</p>
@@ -747,7 +747,7 @@ const CricketExtras = ({ searchQuery = '', initialTab = 'players', showTabSwitch
                 {renderedCommentary.map((row) => (
                   <article
                     key={`com-${row.id}-${row.timestampMs}`}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-3"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-3 anim-card-lift"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs text-slate-500">
