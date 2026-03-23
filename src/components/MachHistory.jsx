@@ -71,6 +71,31 @@ const formatWeekRange = (startMs, endMs) => {
 const resolveFetchError = (fetchError, fallbackMessage) =>
   fetchError?.response?.data?.message ?? fetchError?.message ?? fallbackMessage
 
+const filterMatchesByQuery = (matches, query) => {
+  if (!query) return matches
+
+  return matches.filter((match) => {
+    const searchableText = [
+      match?.seriesName,
+      match?.matchDesc,
+      match?.matchType,
+      match?.matchFormat,
+      match?.status,
+      match?.venue,
+      match?.team1?.name,
+      match?.team1?.short,
+      match?.team2?.name,
+      match?.team2?.short,
+      match?.matchId,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return searchableText.includes(query)
+  })
+}
+
 const MatchHistoryCard = ({ match }) => {
   const badge = buildStateBadge(match.state, match.status)
 
@@ -133,6 +158,7 @@ const MatchHistoryWeekPanel = ({
   matches,
   error,
   isLoading,
+  emptyText,
   tone = 'blue',
 }) => {
   const toneClasses =
@@ -182,7 +208,7 @@ const MatchHistoryWeekPanel = ({
 
       {!isLoading && !error && matches.length === 0 && (
         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
-          No matches found for this week.
+          {emptyText}
         </div>
       )}
 
@@ -197,7 +223,7 @@ const MatchHistoryWeekPanel = ({
   )
 }
 
-const MachHistory = () => {
+const MachHistory = ({ searchQuery = '' }) => {
   const [thisWeekMatches, setThisWeekMatches] = useState([])
   const [thisWeekStartMs, setThisWeekStartMs] = useState(null)
   const [thisWeekEndMs, setThisWeekEndMs] = useState(null)
@@ -208,6 +234,8 @@ const MachHistory = () => {
   const [thisWeekError, setThisWeekError] = useState('')
   const [lastWeekError, setLastWeekError] = useState('')
   const [lastUpdated, setLastUpdated] = useState('Waiting for first update')
+  const normalizedSearch = String(searchQuery).trim().toLowerCase()
+  const isSearchActive = normalizedSearch.length > 0
 
   useEffect(() => {
     let isMounted = true
@@ -275,6 +303,27 @@ const MachHistory = () => {
     () => formatWeekRange(lastWeekStartMs, lastWeekEndMs),
     [lastWeekStartMs, lastWeekEndMs]
   )
+  const filteredThisWeekMatches = useMemo(
+    () => filterMatchesByQuery(thisWeekMatches, normalizedSearch),
+    [thisWeekMatches, normalizedSearch]
+  )
+  const filteredLastWeekMatches = useMemo(
+    () => filterMatchesByQuery(lastWeekMatches, normalizedSearch),
+    [lastWeekMatches, normalizedSearch]
+  )
+  const totalFilteredCount = filteredThisWeekMatches.length + filteredLastWeekMatches.length
+  const thisWeekSummary = isSearchActive
+    ? `${filteredThisWeekMatches.length}/${thisWeekMatches.length} matches match search`
+    : `${thisWeekMatches.length} matches this week`
+  const lastWeekSummary = isSearchActive
+    ? `${filteredLastWeekMatches.length}/${lastWeekMatches.length} matches match search`
+    : `${lastWeekMatches.length} matches last week`
+  const thisWeekEmptyText = isSearchActive
+    ? `No matches found for "${searchQuery.trim()}" in this week.`
+    : 'No matches found for this week.'
+  const lastWeekEmptyText = isSearchActive
+    ? `No matches found for "${searchQuery.trim()}" in last week.`
+    : 'No matches found for last week.'
 
   return (
     <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-12">
@@ -286,6 +335,9 @@ const MachHistory = () => {
               This Week + Last Week Fixtures & Results
             </h2>
             <p className="text-sm text-slate-600 mt-1">Two separate views for easier comparison</p>
+            {isSearchActive && (
+              <p className="text-xs text-blue-700 mt-2">Search filter: "{searchQuery.trim()}"</p>
+            )}
           </div>
           <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 min-w-[230px]">
             <p className="text-xs text-blue-700 font-semibold uppercase tracking-wide">Weekly Summary</p>
@@ -297,15 +349,22 @@ const MachHistory = () => {
           </div>
         </div>
 
+        {isSearchActive && (
+          <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+            {totalFilteredCount} matches found across this week and last week.
+          </div>
+        )}
+
         <div className="mt-5 space-y-5">
           <MatchHistoryWeekPanel
             title="This Week Fixtures & Results"
             subtitle="Current Week"
             weekLabel={thisWeekLabel}
-            summaryLabel={`${thisWeekMatches.length} matches this week`}
-            matches={thisWeekMatches}
+            summaryLabel={thisWeekSummary}
+            matches={filteredThisWeekMatches}
             error={thisWeekError}
             isLoading={isLoading}
+            emptyText={thisWeekEmptyText}
             tone="blue"
           />
 
@@ -313,10 +372,11 @@ const MachHistory = () => {
             title="Last Week Fixtures & Results"
             subtitle="Previous Week"
             weekLabel={lastWeekLabel}
-            summaryLabel={`${lastWeekMatches.length} matches last week`}
-            matches={lastWeekMatches}
+            summaryLabel={lastWeekSummary}
+            matches={filteredLastWeekMatches}
             error={lastWeekError}
             isLoading={isLoading}
+            emptyText={lastWeekEmptyText}
             tone="amber"
           />
         </div>

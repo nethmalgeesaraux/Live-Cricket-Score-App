@@ -46,7 +46,7 @@ const formatDateTime = (timestampMs) => {
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
 }
 
-const LiveMach = () => {
+const LiveMach = ({ searchQuery = '' }) => {
   const [matchBundle, setMatchBundle] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -137,6 +137,26 @@ const LiveMach = () => {
       : '0.00'
 
   const status = meta?.status ?? scorePayload?.status ?? 'Live status updating'
+  const normalizedSearch = String(searchQuery).trim().toLowerCase()
+  const isSearchActive = normalizedSearch.length > 0
+  const liveSearchMatched = !isSearchActive
+    ? true
+    : [
+        meta?.seriesname,
+        meta?.matchdesc,
+        meta?.matchformat,
+        meta?.state,
+        meta?.venueinfo?.ground,
+        meta?.venueinfo?.city,
+        teamOneName,
+        teamOneShort,
+        teamTwoName,
+        teamTwoShort,
+        status,
+        matchBundle?.matchId,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalizedSearch))
 
   const teamCards = [
     {
@@ -214,6 +234,20 @@ const LiveMach = () => {
         {error && (
           <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             API error: {error}
+          </div>
+        )}
+
+        {isSearchActive && (
+          <div
+            className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+              liveSearchMatched
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-amber-200 bg-amber-50 text-amber-800'
+            }`}
+          >
+            {liveSearchMatched
+              ? `Search matched in live section for "${searchQuery.trim()}".`
+              : `No direct live match result for "${searchQuery.trim()}". Showing latest live match.`}
           </div>
         )}
 
