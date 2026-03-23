@@ -298,10 +298,11 @@ const normalizeHistoryMatch = (row) => {
   }
 }
 
-const getWeekBounds = (referenceDate = new Date()) => {
+const getWeekBounds = (referenceDate = new Date(), weekOffset = 0) => {
   const start = new Date(referenceDate)
   const dayOfWeek = (start.getDay() + 6) % 7
   start.setDate(start.getDate() - dayOfWeek)
+  start.setDate(start.getDate() + weekOffset * 7)
   start.setHours(0, 0, 0, 0)
 
   const end = new Date(start)
@@ -350,7 +351,7 @@ export const fetchLiveMatchBundle = async (preferredMatchId) => {
   return buildBundleFromMatchRow(selected)
 }
 
-export const fetchThisWeekMatches = async () => {
+const fetchMatchesByWeekOffset = async (weekOffset = 0) => {
   const [livePayload, recentPayload, upcomingPayload] = await Promise.all([
     getData('/matches/v1/live'),
     getData('/matches/v1/recent'),
@@ -378,7 +379,7 @@ export const fetchThisWeekMatches = async () => {
     }
   })
 
-  const { start, end } = getWeekBounds()
+  const { start, end } = getWeekBounds(new Date(), weekOffset)
   const weekStartMs = start.getTime()
   const weekEndMs = end.getTime()
 
@@ -393,6 +394,10 @@ export const fetchThisWeekMatches = async () => {
     matches,
   }
 }
+
+export const fetchThisWeekMatches = async () => fetchMatchesByWeekOffset(0)
+
+export const fetchLastWeekMatches = async () => fetchMatchesByWeekOffset(-1)
 
 const pickRankingsArray = (payload) => {
   if (Array.isArray(payload)) return payload

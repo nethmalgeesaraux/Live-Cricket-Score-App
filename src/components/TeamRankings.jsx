@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { fetchTeamRankings } from '../api/cricketapi'
 import RankingFilters from './RankingFilters'
 import TopRankedTeams from './TopRankedTeams'
+import TeamRankingsCharts from './TeamRankingsCharts'
 
 const TeamRankings = () => {
   const [rows, setRows] = useState([])
@@ -115,6 +116,8 @@ const TeamRankings = () => {
             </table>
           </div>
         )}
+
+        <TeamRankingsCharts rows={rows} />
       </div>
     </section>
   )
