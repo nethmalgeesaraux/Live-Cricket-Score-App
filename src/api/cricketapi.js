@@ -48,6 +48,29 @@ const rankingsApi = axios.create({
   timeout: 20000,
 })
 
+const normalizeApiErrorMessage = (error) => {
+  const status = Number(error?.response?.status ?? 0)
+  const rawMessage =
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
+    error?.message ??
+    'Failed to fetch cricket API data'
+
+  const message = String(rawMessage).toLowerCase()
+  const isQuotaError =
+    status === 429 ||
+    message.includes('exceeded the daily quota') ||
+    message.includes('exceeded the monthly quota') ||
+    message.includes('daily quota') ||
+    message.includes('monthly quota')
+
+  if (isQuotaError) {
+    return 'Data not found'
+  }
+
+  return rawMessage
+}
+
 const getData = async (url) => {
   try {
     const response = await cricketApi.get(url, {
@@ -58,11 +81,7 @@ const getData = async (url) => {
     if (response.status === 204) return null
     return response.data
   } catch (error) {
-    const message =
-      error?.response?.data?.message ??
-      error?.response?.data?.error ??
-      error?.message ??
-      'Failed to fetch cricket API data'
+    const message = normalizeApiErrorMessage(error)
     throw new Error(message)
   }
 }
@@ -77,11 +96,7 @@ const getRankingsData = async (url, params = {}) => {
 
     return response.data
   } catch (error) {
-    const message =
-      error?.response?.data?.message ??
-      error?.response?.data?.error ??
-      error?.message ??
-      'Failed to fetch rankings API data'
+    const message = normalizeApiErrorMessage(error)
     throw new Error(message)
   }
 }
@@ -416,10 +431,10 @@ const normalizeRankRow = (item, index) => ({
   matches: Number(item?.matches ?? item?.match ?? item?.played ?? item?.playedMatches ?? 0),
 })
 
-export const fetchWomenT20TeamRankings = async () => {
+export const fetchTeamRankings = async ({ formatType = 't20', women = '1' } = {}) => {
   const payload = await getRankingsData('/rankings/team/', {
-    formatType: 't20',
-    women: '1',
+    formatType,
+    women,
   })
 
   const rankings = pickRankingsArray(payload)
@@ -428,3 +443,9 @@ export const fetchWomenT20TeamRankings = async () => {
 
   return rankings
 }
+
+export const fetchWomenT20TeamRankings = async () =>
+  fetchTeamRankings({
+    formatType: 't20',
+    women: '1',
+  })

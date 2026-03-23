@@ -1,15 +1,22 @@
 import React, { useEffect, useState } from 'react'
-import { fetchWomenT20TeamRankings } from '../api/cricketapi'
+import { fetchTeamRankings } from '../api/cricketapi'
+import RankingFilters from './RankingFilters'
+import TopRankedTeams from './TopRankedTeams'
 
 const TeamRankings = () => {
   const [rows, setRows] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [formatType, setFormatType] = useState('t20')
+  const [women, setWomen] = useState('1')
   const [lastUpdated, setLastUpdated] = useState('Waiting for first update')
 
-  const loadRankings = async () => {
+  const loadRankings = async (selectedFormat, selectedWomen) => {
     try {
-      const response = await fetchWomenT20TeamRankings()
+      const response = await fetchTeamRankings({
+        formatType: selectedFormat,
+        women: selectedWomen,
+      })
       setRows((response ?? []).slice(0, 10))
       setError('')
       setLastUpdated(new Date().toLocaleTimeString())
@@ -21,8 +28,15 @@ const TeamRankings = () => {
   }
 
   useEffect(() => {
-    loadRankings()
-  }, [])
+    loadRankings(formatType, women)
+  }, [formatType, women])
+
+  const categoryLabel = `${women === '1' ? 'Women' : 'Men'} ${formatType.toUpperCase()}`
+
+  const onRefresh = () => {
+    setIsLoading(true)
+    loadRankings(formatType, women)
+  }
 
   return (
     <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 pb-10">
@@ -30,8 +44,8 @@ const TeamRankings = () => {
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/80 pb-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">ICC Rankings</p>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">Women T20 Team Rankings</h2>
-            <p className="text-sm text-slate-600 mt-1">Powered by crickbuzz-official-apis</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">Team Rankings</h2>
+            <p className="text-sm text-slate-600 mt-1">Category: {categoryLabel}</p>
           </div>
           <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 min-w-[230px]">
             <p className="text-xs text-violet-700 font-semibold uppercase tracking-wide">Rankings Snapshot</p>
@@ -39,7 +53,7 @@ const TeamRankings = () => {
             <p className="text-[11px] text-slate-500 mt-1">Last update: {lastUpdated}</p>
             <button
               type="button"
-              onClick={loadRankings}
+              onClick={onRefresh}
               className="mt-2 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs text-violet-700 hover:bg-violet-50"
             >
               Refresh
@@ -64,6 +78,18 @@ const TeamRankings = () => {
             No rankings data available.
           </div>
         )}
+
+        <div className="mt-4">
+          <RankingFilters
+            formatType={formatType}
+            women={women}
+            onFormatChange={setFormatType}
+            onWomenChange={setWomen}
+            disabled={isLoading}
+          />
+        </div>
+
+        <TopRankedTeams rows={rows} />
 
         {rows.length > 0 && (
           <div className="mt-5 overflow-x-auto">
